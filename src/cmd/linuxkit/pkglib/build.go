@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/containerd/containerd/reference"
 	"github.com/google/go-containerregistry/pkg/v1"
@@ -32,6 +33,7 @@ type buildOpts struct {
 	image        bool
 	targetDocker bool
 	cache        string
+	platform     string
 }
 
 // BuildOpt allows callers to specify options to Build
@@ -109,6 +111,14 @@ func WithBuildCacheDir(dir string) BuildOpt {
 	}
 }
 
+// WithPlatform provide a build platform
+func WithPlatform(platform string) BuildOpt {
+	return func(bo *buildOpts) error {
+		bo.platform = platform
+		return nil
+	}
+}
+
 // Build builds the package
 func (p Pkg) Build(bos ...BuildOpt) error {
 	var bo buildOpts
@@ -136,6 +146,16 @@ func (p Pkg) Build(bos ...BuildOpt) error {
 		desc   *v1.Descriptor
 		suffix string
 	)
+
+	if bo.platform != "" {
+		switch bo.platform {
+		case "linux/amd64", "linux/arm64", "linux/s390x":
+			arch = strings.Split(bo.platform, "/")[1];
+		default:
+			return fmt.Errorf("Unknown platform setted %q", bo.platform)
+		}
+	}
+
 	switch arch {
 	case "amd64", "arm64", "s390x":
 		suffix = "-" + arch
@@ -196,6 +216,10 @@ func (p Pkg) Build(bos ...BuildOpt) error {
 
 		if err := p.dockerDepends.Do(d); err != nil {
 			return err
+		}
+
+		if bo.platform != "" {
+			args = append(args, "--platform", bo.platform)
 		}
 
 		if p.git != nil && p.gitRepo != "" {

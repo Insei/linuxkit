@@ -19,6 +19,7 @@ func pkgBuild(args []string) {
 		flags.PrintDefaults()
 	}
 
+	platform := flags.String("platform", "", "Setup a platform for package cross-platform build. Ex: linux/amd64, linux/arm64, linux/s390x")
 	force := flags.Bool("force", false, "Force rebuild")
 	docker := flags.Bool("docker", false, "Store the built image in the docker image cache instead of the default linuxkit cache")
 	buildCacheDir := flags.String("cache", defaultLinuxkitCache(), "Directory for storing built image, incompatible with --docker")
@@ -36,6 +37,7 @@ func pkgBuild(args []string) {
 		opts = append(opts, pkglib.WithBuildForce())
 	}
 	opts = append(opts, pkglib.WithBuildCacheDir(*buildCacheDir))
+	opts = append(opts, pkglib.WithPlatform(*platform))
 	if *docker {
 		opts = append(opts, pkglib.WithBuildTargetDockerCache())
 	}
